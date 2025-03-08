@@ -14,6 +14,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UGroomComponent;
 class AItem;
+class UAnimMontage;
 
 UCLASS()
 class MYPROJECT3_API ASlashCharacter : public ACharacter
@@ -24,15 +25,28 @@ public:
 	ASlashCharacter();
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	// virtual void Jump() override;
 
 protected:
+	/**
+	* Callbacks for input
+	**/
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	void Turn(float Value);
 	void LookUp(float Value);
 	void EKeyPressed();
+	void Attack();
 
+	/**
+	* Play montage functions
+	**/
+
+	void PlayAttackMontage();
+
+
+	/**
+	* Input actions
+	**/
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, Category = Input)
@@ -50,11 +64,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* EKeyAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* AttackAction;
+
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 
 private:
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
+	EActionState ActionState = EActionState::EAS_Unoccupied;
 
 	UPROPERTY(VisibleAnywhere);
 	USpringArmComponent* CameraBoom;
@@ -70,6 +88,10 @@ private:
 
 	UPROPERTY(VisibleInstanceOnly);
 	AItem* OverlappingItem;
+
+	// Animation montages
+	UPROPERTY(EditDefaultsOnly, Category = Montages);
+	UAnimMontage* AttackMontage;
 
 public:
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
