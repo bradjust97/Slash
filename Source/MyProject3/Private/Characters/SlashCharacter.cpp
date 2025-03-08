@@ -55,6 +55,7 @@ void ASlashCharacter::BeginPlay()
 
 void ASlashCharacter::Move(const FInputActionValue& Value)
 {
+	if (ActionState == EActionState::EAS_Attacking) return;
 	const FVector2D MovementVector = Value.Get<FVector2D>();
 	/*FVector Forward = GetActorForwardVector();
 	AddMovementInput(Forward, MovementVector.Y);
@@ -106,6 +107,7 @@ void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 void ASlashCharacter::MoveForward(float Value)
 {
+	
 	if ((Value != 0.f) && (Controller))
 	{
 		// find out which way is forward
@@ -122,6 +124,7 @@ void ASlashCharacter::MoveForward(float Value)
 
 void ASlashCharacter::MoveRight(float Value)
 {
+	if (ActionState == EActionState::EAS_Attacking) return;
 	FVector Right = GetActorRightVector();
 	AddMovementInput(Right, Value);
 }
@@ -148,7 +151,7 @@ void ASlashCharacter::EKeyPressed()
 
 void ASlashCharacter::Attack()
 {
-	if (ActionState == EActionState::EAS_Unoccupied)
+	if (CanAttack())
 	{
 		PlayAttackMontage();
 		ActionState = EActionState::EAS_Attacking;
@@ -176,5 +179,15 @@ void ASlashCharacter::PlayAttackMontage()
 		}
 		AnimInstance->Montage_JumpToSection(SectionName, AttackMontage);
 	}
+}
+
+void ASlashCharacter::AttackEnd()
+{
+	ActionState = EActionState::EAS_Unoccupied;
+}
+
+bool ASlashCharacter::CanAttack()
+{
+	return ActionState == EActionState::EAS_Unoccupied && CharacterState != ECharacterState::ECS_Unequipped;
 }
 
