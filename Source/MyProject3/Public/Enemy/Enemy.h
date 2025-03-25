@@ -8,6 +8,8 @@
 #include "Enemy.generated.h"
 
 class UAnimMontage;
+class UAttributeComponent;
+class UWidgetComponent;
 
 UCLASS()
 class MYPROJECT3_API AEnemy : public ACharacter, public IHitInterface
@@ -33,10 +35,16 @@ protected:
 	void PlayHitReactMontage(const FName& SectionName);
 
 private:
+	UPROPERTY(VisibleAnywhere)
+	UAttributeComponent* Attributes;
+
+	UPROPERTY(VisibleAnywhere)
+	UWidgetComponent* HealthBarWidget;
+
 	/**
 	* Animation montages
 	*/
-	UPROPERTY(EditDefaultsOnly, Category = Montages);
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* HitReactMontage;
 
 	UPROPERTY(EditAnywhere, Category = Sounds)
