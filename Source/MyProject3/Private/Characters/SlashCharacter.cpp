@@ -191,7 +191,7 @@ void ASlashCharacter::PlayAttackMontage()
 	if (AnimInstance && AttackMontage)
 	{
 		AnimInstance->Montage_Play(AttackMontage, float(2));
-		const int32 Selection = FMath::RandRange(0, 0);
+		const int32 Selection = FMath::RandRange(0, 2);
 		FName SectionName = FName();
 		switch (Selection)
 		{

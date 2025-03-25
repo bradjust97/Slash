@@ -8,6 +8,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/BoxComponent.h"
 #include "Interfaces/HitInterface.h"
+#include "NiagaraComponent.h"
 
 AWeapon::AWeapon()
 {
@@ -45,6 +46,10 @@ void AWeapon::Equip(USceneComponent* InParent, FName InSocketName)
 	{
 		Sphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
+	if (EmbersEffect)
+	{
+		EmbersEffect->Deactivate();
+	}
 }
 
 void AWeapon::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
@@ -65,6 +70,7 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 
 void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Cock"));
 	const FVector Start = BoxTraceStart->GetComponentLocation();
 	const FVector End = BoxTraceEnd->GetComponentLocation();
 
@@ -73,6 +79,7 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 	FHitResult BoxHit;
 	for (AActor* Actor : IgnoreActors)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Hole"));
 		ActorsToIgnore.AddUnique(Actor);
 	}
 
@@ -88,9 +95,11 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 		true);
 	if (BoxHit.GetActor())
 	{
+		UE_LOG(LogTemp, Warning, TEXT("1"));
 		IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
 		if (HitInterface)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("2"));
 			// The execute_ prefix is there because its a blueprint native event in hitinterface.h
 			HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
 		}
