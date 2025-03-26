@@ -13,5 +13,13 @@ UCLASS()
 class MYPROJECT3_API UHealthBarComponent : public UWidgetComponent
 {
 	GENERATED_BODY()
+
+public:
+	void SetHealthPercent(float Percent);
+
+private:
+	// Putting this even tho its empty guaruntees init as nullptr
+	UPROPERTY()
+	class UHealthBar* HealthBarWidget;
 	
 };
