@@ -7,7 +7,7 @@
 
 void UHealthBarComponent::SetHealthPercent(float Percent)
 {
-	
+	UE_LOG(LogTemp, Warning, TEXT("SetHealthPercent"));
 	if (HealthBarWidget == nullptr)
 	{
 		HealthBarWidget = Cast<UHealthBar>(GetUserWidgetObject());
