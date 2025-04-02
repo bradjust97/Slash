@@ -155,9 +155,9 @@ void ASlashCharacter::EKeyPressed()
 	if (OverlappingWeapon) 
 	{
 		OverlappingWeapon->Equip(this->GetMesh(), FName("RightHandSocket"), this, this);
-		CharacterState = ECharacterState::ECS_EquippedOneHandedWeapon;
 		OverlappingItem = nullptr;
 		EquippedWeapon = OverlappingWeapon;
+		SetStateToEquippedWeaponHandedness();
 	}
 	else
 	{
@@ -170,7 +170,7 @@ void ASlashCharacter::EKeyPressed()
 		else if (CanArm())
 		{
 			PlayEquipMontage(FName("Equip"));
-			CharacterState = ECharacterState::ECS_EquippedOneHandedWeapon;
+			SetStateToEquippedWeaponHandedness();
 			ActionState = EActionState::EAS_EquippingWeapon;
 		}
 	}
@@ -180,6 +180,7 @@ void ASlashCharacter::Attack()
 {
 	if (CanAttack())
 	{
+		UE_LOG(LogTemp, Warning, TEXT("The character state is: %d"), CharacterState);
 		PlayAttackMontage();
 		ActionState = EActionState::EAS_Attacking;
 	}
@@ -263,4 +264,23 @@ void ASlashCharacter::Arm()
 void ASlashCharacter::FinishEquipping()
 {
 	ActionState = EActionState::EAS_Unoccupied;
+}
+
+void ASlashCharacter::SetStateToEquippedWeaponHandedness()
+{
+	if (EquippedWeapon)
+	{
+		switch (EquippedWeapon->Handedness)
+		{
+		case EWeaponHanded::EWH_OneHanded:
+			CharacterState = ECharacterState::ECS_EquippedOneHandedWeapon;
+			break;
+		case EWeaponHanded::EWH_TwoHanded:
+			CharacterState = ECharacterState::ECS_EquippedTwoHandedWeapon;
+			break;
+		}
+	}
+	else {
+		throw std::invalid_argument("SetStateToEquippedWeaponHandedness called with null weapon");
+	}
 }

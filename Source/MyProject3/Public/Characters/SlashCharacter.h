@@ -65,6 +65,8 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void FinishEquipping();
 
+	void SetStateToEquippedWeaponHandedness();
+
 
 	/**
 	* Input actions

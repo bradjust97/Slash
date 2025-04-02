@@ -31,6 +31,9 @@ public:
 
 	TArray<AActor*> IgnoreActors;
 
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	EWeaponHanded Handedness;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -43,8 +46,6 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void CreateFields(const FVector& FieldLocation);
 
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
-	EWeaponHanded Handedness;
 
 private:
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
