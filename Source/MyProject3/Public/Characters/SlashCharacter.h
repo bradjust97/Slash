@@ -123,6 +123,9 @@ private:
 	UAnimMontage* AttackMontage;
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages);
+	UAnimMontage* TwoHandedAttackMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages);
 	UAnimMontage* EquipMontage;
 
 	UPROPERTY(VisibleAnywhere, Category = Weapon)
