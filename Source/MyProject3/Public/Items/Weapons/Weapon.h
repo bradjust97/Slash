@@ -9,6 +9,13 @@
 class USoundBase;
 class UBoxComponent;
 
+UENUM(BlueprintType)
+enum class EWeaponHanded : uint8
+{
+	EWH_OneHanded,
+	EWH_TwoHanded
+};
+
 /**
  * 
  */
@@ -35,6 +42,9 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void CreateFields(const FVector& FieldLocation);
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	EWeaponHanded Handedness;
 
 private:
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties")

@@ -101,7 +101,7 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 	{
 		UGameplayStatics::ApplyDamage(
 			BoxHit.GetActor(),
-			Damage,
+			Handedness == EWeaponHanded::EWH_TwoHanded ? Damage * 2.f : Damage,
 			GetInstigator()->GetController(),
 			this,
 			UDamageType::StaticClass() // we just use the standard class for damage in ue5
