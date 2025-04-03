@@ -70,7 +70,20 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	double CombatRadius = 500.f;
+
+	/**
+	* Navigation
+	*/
+
+	// You should give uproperty to actor pointers
+	UPROPERTY()
+	class AAIController* EnemyController;
 	
+	// Current patrol target
+	UPROPERTY(EditInstanceOnly, Category = "AI Navigation")
+	AActor* PatrolTarget;
+
+	TArray<AActor*> PatrolTargets;
 
 public:	
 	

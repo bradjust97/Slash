@@ -4,11 +4,14 @@
 #include "Enemy/Enemy.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "MyProject3/DebugMacros.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/AttributeComponent.h"
 #include "HUD/HealthBarComponent.h"
+#include "AIController.h"
+#include "Navigation/PathFollowingComponent.h"
 
 AEnemy::AEnemy()
 {
@@ -23,6 +26,11 @@ AEnemy::AEnemy()
 
 	HealthBarWidget = CreateDefaultSubobject<UHealthBarComponent>(TEXT("HealthBar"));
 	HealthBarWidget->SetupAttachment(GetRootComponent());
+
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
 }
 
 void AEnemy::BeginPlay()
@@ -30,14 +38,37 @@ void AEnemy::BeginPlay()
 	Super::BeginPlay();
 	if (HealthBarWidget)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("The float value for me is: %f"), Attributes->GetHealthPercent());
 		HealthBarWidget->SetHealthPercent(100.f); 
 		HealthBarWidget->SetVisibility(false);
 	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("Poo poo chungo"));
+
+	EnemyController = Cast<AAIController>(GetController());
+
+	if (EnemyController)
+	{
+		FAIMoveRequest MoveRequest;
+		MoveRequest.SetGoalActor(PatrolTarget);
+		MoveRequest.SetAcceptanceRadius(15.f);
+
+		FNavPathSharedPtr NavPath;
+		EnemyController->MoveTo(MoveRequest, &NavPath);
+
+		if (NavPath) // Ensure NavPath is valid before accessing it
+		{
+			const TArray<FNavPathPoint>& PathPoints = NavPath->GetPathPoints(); // Keep PathPoints in scope
+
+			for (const auto& Point : PathPoints)
+			{
+				const FVector& Location = Point.Location;
+				DrawDebugSphere(GetWorld(), Location, 12.f, 12, FColor::Green, false, 10.f);
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("NavPath is invalid"));
+		}
+
 	}
-	
 }
 
 void AEnemy::Die()
