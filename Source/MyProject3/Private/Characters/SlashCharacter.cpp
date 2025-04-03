@@ -158,6 +158,10 @@ void ASlashCharacter::EKeyPressed()
 		OverlappingItem = nullptr;
 		EquippedWeapon = OverlappingWeapon;
 		SetStateToEquippedWeaponHandedness();
+		FVector test = EquippedWeapon->GetActorScale3D();
+		UE_LOG(LogTemp, Warning, TEXT("The float value is first: %f"), test.X);
+		FVector test2 = OverlappingWeapon->GetActorScale3D();
+		UE_LOG(LogTemp, Warning, TEXT("The float value is second: %f"), test2.X);
 	}
 	else
 	{
