@@ -20,6 +20,8 @@ class MYPROJECT3_API AEnemy : public ACharacter, public IHitInterface
 public:
 	AEnemy();
 	virtual void Tick(float DeltaTime) override;
+	void CheckPatrolTarget();
+	void CheckCombatTarget();
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// _Implementation is added when we make it a blueprint native event in hitinterface.h
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
@@ -31,6 +33,9 @@ protected:
 	virtual void BeginPlay() override;
 
 	void Die();
+	bool InTargetRange(AActor* Target, double Radius);
+	void MoveToTarget(AActor* Target);
+	AActor* ChoosePatrolTarget();
 
 	/**
 	* Play montage functions
@@ -40,6 +45,8 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	EDeathPose DeathPose = EDeathPose::EDP_Alive;
+
+	
 
 private:
 	UPROPERTY(VisibleAnywhere)
@@ -83,7 +90,20 @@ private:
 	UPROPERTY(EditInstanceOnly, Category = "AI Navigation")
 	AActor* PatrolTarget;
 
+	UPROPERTY(EditInstanceOnly, Category = "AI Navigation")
 	TArray<AActor*> PatrolTargets;
+
+	UPROPERTY(EditAnywhere)
+	double PatrolRadius = 200.f;
+
+	FTimerHandle PatrolTimer;
+	void PatrolTimerFinished();
+
+	UPROPERTY(EditAnywhere, Category = "AI Navigation")
+	float MinPatrolWaitTime = 3.f;
+
+	UPROPERTY(EditAnywhere, Category = "AI Navigation")
+	float MaxPatrolWaitTime = 7.f;
 
 public:	
 	
