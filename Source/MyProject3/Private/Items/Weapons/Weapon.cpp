@@ -44,7 +44,7 @@ void AWeapon::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOw
 	FVector test3 = this->GetActorScale3D();
 	UE_LOG(LogTemp, Warning, TEXT("The float 3 is: %f"), test3.X);
 	ItemState = EItemState::EIS_Equipped;
-	if (EquipSound)
+	if (EquipSound && NewOwner->ActorHasTag(FName("SlashCharacter")))
 	{
 		UGameplayStatics::PlaySoundAtLocation(
 			this,

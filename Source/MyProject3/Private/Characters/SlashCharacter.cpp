@@ -51,7 +51,7 @@ void ASlashCharacter::BeginPlay()
 			Subsystem->AddMappingContext(SlashContext, 0);
 		}
 	}
-
+	Tags.Add(FName("SlashCharacter"));
 }
 
 void ASlashCharacter::Move(const FInputActionValue& Value)
@@ -104,15 +104,6 @@ if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInput
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ASlashCharacter::Attack);
 }
-}
-
-void ASlashCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
-{
-	if (EquippedWeapon && EquippedWeapon->GetWeaponBox())
-	{
-		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
-		EquippedWeapon->IgnoreActors.Empty();
-	}
 }
 
 void ASlashCharacter::MoveForward(float Value)
@@ -182,9 +173,9 @@ void ASlashCharacter::EKeyPressed()
 
 void ASlashCharacter::Attack()
 {
+	Super::Attack();
 	if (CanAttack())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("The character state is: %d"), CharacterState);
 		PlayAttackMontage();
 		ActionState = EActionState::EAS_Attacking;
 	}
@@ -192,11 +183,13 @@ void ASlashCharacter::Attack()
 
 void ASlashCharacter::PlayAttackMontage()
 {
+	Super::PlayAttackMontage();
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance)
 	{
 		if (CharacterState == ECharacterState::ECS_EquippedOneHandedWeapon && AttackMontage)
 		{
+			// Should prob change rate scale in animation directly instead of this fix
 			AnimInstance->Montage_Play(AttackMontage, float(2));
 			const int32 Selection = FMath::RandRange(0, 2);
 			FName SectionName = FName();
