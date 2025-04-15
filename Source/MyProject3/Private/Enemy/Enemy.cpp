@@ -8,7 +8,6 @@
 #include "Perception/PawnSensingComponent.h"
 #include "MyProject3/DebugMacros.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Kismet/GameplayStatics.h"
 #include "Components/AttributeComponent.h"
 #include "HUD/HealthBarComponent.h"
 #include "AIController.h"
@@ -56,6 +55,8 @@ void AEnemy::BeginPlay()
 		PawnSensing->OnSeePawn.AddDynamic(this, &AEnemy::PawnSeen);
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("Enemy state at begin: %d"), EnemyState);
+
 	UWorld* World = GetWorld();
 	if (World && WeaponClass)
 	{
@@ -67,6 +68,8 @@ void AEnemy::BeginPlay()
 
 void AEnemy::Die()
 {
+	UE_LOG(LogTemp, Warning, TEXT("Enemy state at die: %d"), EnemyState);
+
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && DeathMontage)
 	{
@@ -78,32 +81,26 @@ void AEnemy::Die()
 		case 0:
 			SectionName = FName("Death1");
 			DeathPose = EDeathPose::EDP_Death1;
-			UE_LOG(LogTemp, Warning, TEXT("Hello 1"));
 			break;
 		case 1:
 			SectionName = FName("Death2");
 			DeathPose = EDeathPose::EDP_Death2;
-			UE_LOG(LogTemp, Warning, TEXT("Hello 2"));
 			break;
 		case 2:
 			SectionName = FName("Death3");
 			DeathPose = EDeathPose::EDP_Death3;
-			UE_LOG(LogTemp, Warning, TEXT("Hello 3"));
 			break;
 		case 3:
 			SectionName = FName("Death4");
 			DeathPose = EDeathPose::EDP_Death4;
-			UE_LOG(LogTemp, Warning, TEXT("Hello 4"));
 			break;
 		case 4:
 			SectionName = FName("Death5");
 			DeathPose = EDeathPose::EDP_Death5;
-			UE_LOG(LogTemp, Warning, TEXT("Hello 5"));
 			break;
 		case 5:
 			SectionName = FName("Death6");
 			DeathPose = EDeathPose::EDP_Death6;
-			UE_LOG(LogTemp, Warning, TEXT("Hello 6"));
 			break;
 		default:
 			break;
@@ -128,6 +125,8 @@ bool AEnemy::InTargetRange(AActor* Target, double Radius)
 
 void AEnemy::MoveToTarget(AActor* Target)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Moving!"));
+	UE_LOG(LogTemp, Warning, TEXT("Enemy state at move: %d"), EnemyState);
 	if (EnemyController == nullptr || Target == nullptr) return;
 	FAIMoveRequest MoveRequest;
 	MoveRequest.SetGoalActor(Target);
@@ -160,53 +159,38 @@ void AEnemy::Attack()
 	PlayAttackMontage();
 }
 
-void AEnemy::PlayAttackMontage()
+bool AEnemy::CanAttack()
 {
-	Super::PlayAttackMontage();
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance)
+	// Dont spam setting attacking state for isattacking check
+	return IsInsideAttackRadius() && !IsAttacking() && !IsDead();
+}
+
+void AEnemy::HandleDamage(float DamageAmount)
+{
+	Super::HandleDamage(DamageAmount);
+	if (Attributes && HealthBarWidget)
 	{
-		if (AttackMontage)
-		{
-			AnimInstance->Montage_Play(AttackMontage);
-			// TODO this is hard coded and bad
-			const int32 Selection = FMath::RandRange(0, 2);
-			FName SectionName = FName();
-			switch (Selection)
-			{
-			case 0:
-				SectionName = FName("Attack1");
-				break;
-			case 1:
-				SectionName = FName("Attack2");
-				break;
-			case 2:
-				SectionName = FName("Attack3");
-				break;
-			default:
-				break;
-			}
-			AnimInstance->Montage_JumpToSection(SectionName, AttackMontage);
-		}
+		HealthBarWidget->SetHealthPercent(Attributes->GetHealthPercent());
 	}
 }
 
 void AEnemy::PawnSeen(APawn* SeenPawn)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Pawn seen!"));
+	const bool shouldChaseTarget =
+		EnemyState != EEnemyState::EES_Dead &&
+		EnemyState != EEnemyState::EES_Chasing &&
+		EnemyState < EEnemyState::EES_Attacking &&
+		SeenPawn->ActorHasTag(FName("SlashCharacter"));
+
 	if (EnemyState == EEnemyState::EES_Chasing) return;
 	// Could cast but then that means its casting quite often. More perf to use tags
-	if (SeenPawn->ActorHasTag(FName("SlashCharacter")))
+	if (shouldChaseTarget)
 	{
-		GetWorldTimerManager().ClearTimer(PatrolTimer);
-		GetCharacterMovement()->MaxWalkSpeed = 300.f;
+		UE_LOG(LogTemp, Warning, TEXT("Pawn seen2!"));
 		CombatTarget = SeenPawn;
-
-		if (EnemyState != EEnemyState::EES_Attacking)
-		{
-			EnemyState = EEnemyState::EES_Chasing;
-			MoveToTarget(CombatTarget);
-			UE_LOG(LogTemp, Warning, TEXT("Pawn seen, chase player"));
-		}
+		ClearPatrolTimer();
+		ChaseTarget();
 	}
 }
 
@@ -215,10 +199,103 @@ void AEnemy::PatrolTimerFinished()
 	MoveToTarget(PatrolTarget);
 }
 
+void AEnemy::HideHealthBar()
+{
+	// Outside combat radius lose interest
+	if (HealthBarWidget)
+	{
+		HealthBarWidget->SetVisibility(false);
+	}
+}
+
+void AEnemy::ShowHealthBar()
+{
+	// Outside combat radius lose interest
+	if (HealthBarWidget)
+	{
+		HealthBarWidget->SetVisibility(true);
+	}
+}
+
+void AEnemy::LoseInterest()
+{
+	// Outside combat radius lose interest
+	HideHealthBar();
+	CombatTarget = nullptr;
+}
+
+void AEnemy::StartPatrolling()
+{
+	EnemyState = EEnemyState::EES_Patrolling;
+	GetCharacterMovement()->MaxWalkSpeed = PatrollingSpeed;
+	MoveToTarget(PatrolTarget);
+}
+
+void AEnemy::ChaseTarget()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Chasing!"));
+	// In combat but outside attack radius, so chase
+	EnemyState = EEnemyState::EES_Chasing;
+	GetCharacterMovement()->MaxWalkSpeed = ChasingSpeed;
+	MoveToTarget(CombatTarget);
+}
+
+bool AEnemy::IsOutsideCombatRadius()
+{
+	return !InTargetRange(CombatTarget, CombatRadius);
+}
+
+bool AEnemy::IsOutsideAttackRadius()
+{
+	return !InTargetRange(CombatTarget, AttackRadius);
+}
+
+bool AEnemy::IsInsideAttackRadius()
+{
+	return InTargetRange(CombatTarget, AttackRadius);
+}
+
+bool AEnemy::IsChasing()
+{
+	return EnemyState == EEnemyState::EES_Chasing;
+}
+
+bool AEnemy::IsAttacking()
+{
+	return EnemyState == EEnemyState::EES_Attacking;
+}
+
+bool AEnemy::IsDead()
+{
+	return EnemyState == EEnemyState::EES_Dead;
+}
+
+bool AEnemy::IsEngaged()
+{
+	return EnemyState == EEnemyState::EES_Engaging;
+}
+
+void AEnemy::ClearPatrolTimer()
+{
+	GetWorldTimerManager().ClearTimer(PatrolTimer);
+}
+
+void AEnemy::StartAttackTimer()
+{
+	EnemyState = EEnemyState::EES_Attacking;
+	const float AttackTime = FMath::RandRange(AttackMin, AttackMax);
+	GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
+}
+
+void AEnemy::ClearAttackTimer()
+{
+	GetWorldTimerManager().ClearTimer(AttackTimer);
+}
+
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	if (IsDead()) return;
 	if (EnemyState > EEnemyState::EES_Patrolling)
 	{
 		CheckCombatTarget();
@@ -242,50 +319,27 @@ void AEnemy::CheckPatrolTarget()
 
 void AEnemy::CheckCombatTarget()
 {
-	if (!InTargetRange(CombatTarget, CombatRadius))
+	if (IsOutsideCombatRadius())
 	{
-		// Outside combat radius lose interest
-		if (HealthBarWidget)
-		{
-			HealthBarWidget->SetVisibility(false);
-		}
-		CombatTarget = nullptr;
-		EnemyState = EEnemyState::EES_Patrolling;
-		GetCharacterMovement()->MaxWalkSpeed = 125.f;
-		MoveToTarget(PatrolTarget);
-		UE_LOG(LogTemp, Warning, TEXT("Lose interest."));
+		ClearAttackTimer();
+		LoseInterest();
+		if (!IsEngaged()) StartPatrolling();
 	}
-	else if (!InTargetRange(CombatTarget, AttackRadius) && EnemyState != EEnemyState::EES_Chasing) // Dont spam setting chasing state
+	else if (IsOutsideAttackRadius() && !IsChasing()) // Dont spam setting chasing state
 	{
-		// In combat but outside attack radius, so chase
-		EnemyState = EEnemyState::EES_Chasing;
-		GetCharacterMovement()->MaxWalkSpeed = 300.f;
-		MoveToTarget(CombatTarget);
-		UE_LOG(LogTemp, Warning, TEXT("Chasing!"));
+		ClearAttackTimer();
+		if (!IsEngaged()) ChaseTarget();
 	}
-	else if (InTargetRange(CombatTarget, AttackRadius) && EnemyState != EEnemyState::EES_Attacking) // Dont spam setting attacking state
+	else if (CanAttack()) 
 	{
-		EnemyState = EEnemyState::EES_Attacking;
-		// TODO: Attack montage
-		UE_LOG(LogTemp, Warning, TEXT("Attacking!"));
-		Attack();
+		StartAttackTimer();
 	}
-}
-
-void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 }
 
 void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 {
-	// DRAW_COLOR_SPHERE(ImpactPoint, FColor::Orange);
-	if (HealthBarWidget)
-	{
-		HealthBarWidget->SetVisibility(true);
-	}
-	if (Attributes && Attributes->IsAlive())
+	ShowHealthBar();
+	if (IsAlive())
 	{
 		DirectionalHitReact(ImpactPoint);
 	}
@@ -294,34 +348,16 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 		Die();
 	}
 	
-
-	if (HitSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, HitSound, ImpactPoint);
-	}
-	if (HitParticles)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(
-			GetWorld(),
-			HitParticles,
-			ImpactPoint
-		);
-	}
+	PlayHitSound(ImpactPoint);
+	SpawnHitParticles(ImpactPoint);
 }
 
 // We inherit this from Actor.h, and when apply damage is called from something else on the enemy, now this TakeDamage func will get called
 float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	if (Attributes && HealthBarWidget)
-	{
-		Attributes->ReceiveDamage(DamageAmount);
-
-		HealthBarWidget->SetHealthPercent(Attributes->GetHealthPercent());
-	}
+	HandleDamage(DamageAmount);
 	CombatTarget = EventInstigator->GetPawn();
-	EnemyState = EEnemyState::EES_Chasing;
-	MoveToTarget(CombatTarget);
-	GetCharacterMovement()->MaxWalkSpeed = 300.f;
+	ChaseTarget();
 	return DamageAmount;
 }
 

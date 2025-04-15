@@ -30,15 +30,16 @@ protected:
 	virtual void Attack();
 	virtual void Die();
 
-	/**
-	* Play montage functions
-	**/
-
-	virtual void PlayAttackMontage();
+	void PlayAttackMontage();
 	void PlayHitReactMontage(const FName& SectionName);
 	void DirectionalHitReact(const FVector& ImpactPoint);
+	void PlayHitSound(const FVector& ImpactPoint);
+	void SpawnHitParticles(const FVector& ImpactPoint);
+	virtual void HandleDamage(float DamageAmount);
+	void PlayMontageSection(UAnimMontage* Montage, const FName& SectionName);
 
 	virtual bool CanAttack();
+	virtual bool IsAlive();
 
 	UFUNCTION(BlueprintCallable)
 	virtual void AttackEnd();
@@ -62,12 +63,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* DeathMontage;
 
+	UPROPERTY(EditAnywhere, Category = Combat)
+	TArray<FName> AttackMontageSections;
+
 	/*
 	* Components
 	*/
 	UPROPERTY(VisibleAnywhere)
 	UAttributeComponent* Attributes;
 
+private:
 	UPROPERTY(EditAnywhere, Category = Sounds)
 	USoundBase* HitSound;
 
