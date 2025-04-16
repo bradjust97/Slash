@@ -181,42 +181,6 @@ void ASlashCharacter::Attack()
 	}
 }
 
-void ASlashCharacter::PlayAttackMontage()
-{
-	Super::PlayAttackMontage();
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance)
-	{
-		if (CharacterState == ECharacterState::ECS_EquippedOneHandedWeapon && AttackMontage)
-		{
-			// Should prob change rate scale in animation directly instead of this fix
-			AnimInstance->Montage_Play(AttackMontage, float(2));
-			const int32 Selection = FMath::RandRange(0, 2);
-			FName SectionName = FName();
-			switch (Selection)
-			{
-			case 0:
-				SectionName = FName("Attack1");
-				break;
-			case 1:
-				SectionName = FName("Attack2");
-				break;
-			case 2:
-				SectionName = FName("Attack3");
-				break;
-			default:
-				break;
-			}
-			AnimInstance->Montage_JumpToSection(SectionName, AttackMontage);
-		}
-		else if (CharacterState == ECharacterState::ECS_EquippedTwoHandedWeapon && TwoHandedAttackMontage)
-		{
-			AnimInstance->Montage_Play(TwoHandedAttackMontage);
-			AnimInstance->Montage_JumpToSection(FName("Attack1"), TwoHandedAttackMontage);
-		}
-	}
-}
-
 void ASlashCharacter::PlayEquipMontage(const FName& SectionName)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
