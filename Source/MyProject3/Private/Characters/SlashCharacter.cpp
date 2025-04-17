@@ -1,7 +1,6 @@
 #include "Characters/SlashCharacter.h"
 #include "Components/InputComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Components/BoxComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -14,7 +13,7 @@
 
 ASlashCharacter::ASlashCharacter()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -40,6 +39,26 @@ ASlashCharacter::ASlashCharacter()
 
 }
 
+void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	/*PlayerInputComponent->BindAxis(FName("MoveForward"), this, &ASlashCharacter::MoveForward);
+	PlayerInputComponent->BindAxis(FName("MoveRight"), this, &ASlashCharacter::MoveRight);
+	PlayerInputComponent->BindAxis(FName("Turn"), this, &ASlashCharacter::Turn);
+	PlayerInputComponent->BindAxis(FName("LookUp"), this, &ASlashCharacter::LookUp);*/
+	// PlayerInputComponent->BindAction(FName("Jump"), IE_Pressed, this, &ACharacter::Jump);
+	// PlayerInputComponent->BindAction(FName("Equip"), IE_Pressed, this, &ASlashCharacter::EKeyPressed);
+	// PlayerInputComponent->BindAction(FName("Attack"), IE_Pressed, this, &ASlashCharacter::Attack);
+	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		EnhancedInputComponent->BindAction(MovementAction, ETriggerEvent::Triggered, this, &ASlashCharacter::Move);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASlashCharacter::Look);
+		EnhancedInputComponent->BindAction(EKeyAction, ETriggerEvent::Triggered, this, &ASlashCharacter::EKeyPressed);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ASlashCharacter::Attack);
+	}
+}
+
 void ASlashCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -52,58 +71,6 @@ void ASlashCharacter::BeginPlay()
 		}
 	}
 	Tags.Add(FName("SlashCharacter"));
-}
-
-void ASlashCharacter::Move(const FInputActionValue& Value)
-{
-	if (ActionState != EActionState::EAS_Unoccupied) return;
-	const FVector2D MovementVector = Value.Get<FVector2D>();
-	/*FVector Forward = GetActorForwardVector();
-	AddMovementInput(Forward, MovementVector.Y);
-	FVector Right = GetActorRightVector();
-	AddMovementInput(Right, MovementVector.X);*/
-	const FRotator Rotation = Controller->GetControlRotation();
-	const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
-
-	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	AddMovementInput(ForwardDirection, MovementVector.Y);
-	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-	AddMovementInput(RightDirection, MovementVector.X);
-}
-
-void ASlashCharacter::Look(const FInputActionValue& Value)
-{
-	const FVector2D LookAxisVector = Value.Get<FVector2D>();
-	AddControllerPitchInput(LookAxisVector.Y);
-	// UE_LOG(LogTemp, Warning, TEXT("The y value is %d"), LookAxisVector.Y);
-	AddControllerYawInput(LookAxisVector.X);
-	// UE_LOG(LogTemp, Warning, TEXT("The x value is %d"), LookAxisVector.X);
-}
-
-void ASlashCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
-void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	/*PlayerInputComponent->BindAxis(FName("MoveForward"), this, &ASlashCharacter::MoveForward);
-	PlayerInputComponent->BindAxis(FName("MoveRight"), this, &ASlashCharacter::MoveRight);
-	PlayerInputComponent->BindAxis(FName("Turn"), this, &ASlashCharacter::Turn);
-	PlayerInputComponent->BindAxis(FName("LookUp"), this, &ASlashCharacter::LookUp);*/
-	// PlayerInputComponent->BindAction(FName("Jump"), IE_Pressed, this, &ACharacter::Jump);
-	// PlayerInputComponent->BindAction(FName("Equip"), IE_Pressed, this, &ASlashCharacter::EKeyPressed);
-	// PlayerInputComponent->BindAction(FName("Attack"), IE_Pressed, this, &ASlashCharacter::Attack);
-if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
-{
-	EnhancedInputComponent->BindAction(MovementAction, ETriggerEvent::Triggered, this, &ASlashCharacter::Move);
-	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASlashCharacter::Look);
-	EnhancedInputComponent->BindAction(EKeyAction, ETriggerEvent::Triggered, this, &ASlashCharacter::EKeyPressed);
-	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
-	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ASlashCharacter::Attack);
-}
 }
 
 void ASlashCharacter::MoveForward(float Value)
@@ -145,30 +112,27 @@ void ASlashCharacter::EKeyPressed()
 	AWeapon* OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
 	if (OverlappingWeapon)
 	{
-		OverlappingWeapon->Equip(this->GetMesh(), FName("RightHandSocket"), this, this);
-		OverlappingItem = nullptr;
-		EquippedWeapon = OverlappingWeapon;
-		SetStateToEquippedWeaponHandedness();
-		FVector test = EquippedWeapon->GetActorScale3D();
-		UE_LOG(LogTemp, Warning, TEXT("The float value is first: %f"), test.X);
-		FVector test2 = OverlappingWeapon->GetActorScale3D();
-		UE_LOG(LogTemp, Warning, TEXT("The float value is second: %f"), test2.X);
+		EquipWeapon(OverlappingWeapon);
 	}
 	else
 	{
 		if (CanDisarm())
 		{
-			PlayEquipMontage(FName("Unequip"));
-			CharacterState = ECharacterState::ECS_Unequipped;
-			ActionState = EActionState::EAS_EquippingWeapon;
+			Disarm();
 		}
 		else if (CanArm())
 		{
-			PlayEquipMontage(FName("Equip"));
-			SetStateToEquippedWeaponHandedness();
-			ActionState = EActionState::EAS_EquippingWeapon;
+			Arm();
 		}
 	}
+}
+
+void ASlashCharacter::EquipWeapon(AWeapon* Weapon)
+{
+	Weapon->Equip(this->GetMesh(), FName("RightHandSocket"), this, this);
+	OverlappingItem = nullptr;
+	EquippedWeapon = Weapon;
+	SetStateToEquippedWeaponHandedness();
 }
 
 void ASlashCharacter::Attack()
@@ -178,16 +142,6 @@ void ASlashCharacter::Attack()
 	{
 		PlayAttackMontage();
 		ActionState = EActionState::EAS_Attacking;
-	}
-}
-
-void ASlashCharacter::PlayEquipMontage(const FName& SectionName)
-{
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && EquipMontage)
-	{
-		AnimInstance->Montage_Play(EquipMontage);
-		AnimInstance->Montage_JumpToSection(SectionName, EquipMontage);
 	}
 }
 
@@ -216,13 +170,63 @@ bool ASlashCharacter::CanArm()
 
 void ASlashCharacter::Disarm()
 {
+	PlayEquipMontage(FName("Unequip"));
+	CharacterState = ECharacterState::ECS_Unequipped;
+	ActionState = EActionState::EAS_EquippingWeapon;
+}
+
+void ASlashCharacter::Arm()
+{
+	PlayEquipMontage(FName("Equip"));
+	SetStateToEquippedWeaponHandedness();
+	ActionState = EActionState::EAS_EquippingWeapon;
+}
+
+void ASlashCharacter::PlayEquipMontage(const FName& SectionName)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && EquipMontage)
+	{
+		AnimInstance->Montage_Play(EquipMontage);
+		AnimInstance->Montage_JumpToSection(SectionName, EquipMontage);
+	}
+}
+
+void ASlashCharacter::Move(const FInputActionValue& Value)
+{
+	if (ActionState != EActionState::EAS_Unoccupied) return;
+	const FVector2D MovementVector = Value.Get<FVector2D>();
+	/*FVector Forward = GetActorForwardVector();
+	AddMovementInput(Forward, MovementVector.Y);
+	FVector Right = GetActorRightVector();
+	AddMovementInput(Right, MovementVector.X);*/
+	const FRotator Rotation = Controller->GetControlRotation();
+	const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
+
+	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	AddMovementInput(ForwardDirection, MovementVector.Y);
+	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+	AddMovementInput(RightDirection, MovementVector.X);
+}
+
+void ASlashCharacter::Look(const FInputActionValue& Value)
+{
+	const FVector2D LookAxisVector = Value.Get<FVector2D>();
+	AddControllerPitchInput(LookAxisVector.Y);
+	// UE_LOG(LogTemp, Warning, TEXT("The y value is %d"), LookAxisVector.Y);
+	AddControllerYawInput(LookAxisVector.X);
+	// UE_LOG(LogTemp, Warning, TEXT("The x value is %d"), LookAxisVector.X);
+}
+
+void ASlashCharacter::AttachWeaponToBack()
+{
 	if (EquippedWeapon)
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
 	}
 }
 
-void ASlashCharacter::Arm()
+void ASlashCharacter::AttachWeaponToHand()
 {
 	if (EquippedWeapon)
 	{
