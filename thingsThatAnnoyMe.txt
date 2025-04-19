@@ -1,0 +1,4 @@
+health bar got messed up
+sounds for death / footsteps for enemy
+laying down while in map preview
+not consistent sounds when hitting player

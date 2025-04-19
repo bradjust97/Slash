@@ -33,17 +33,35 @@ void AWeapon::BeginPlay()
 void AWeapon::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
 	FVector test = this->GetActorScale3D();
-	UE_LOG(LogTemp, Warning, TEXT("The float 1 is: %f"), test.X);
 	// for actor
 	SetOwner(NewOwner);
 	// for pawn which is more specific
 	SetInstigator(NewInstigator);
-	FVector test2 = this->GetActorScale3D();
-	UE_LOG(LogTemp, Warning, TEXT("The float 2 is: %f"), test2.X);
 	AttachMeshToSocket(InParent, InSocketName);
-	FVector test3 = this->GetActorScale3D();
-	UE_LOG(LogTemp, Warning, TEXT("The float 3 is: %f"), test3.X);
 	ItemState = EItemState::EIS_Equipped;
+	DisableSphereCollision();
+	PlayEquipSound(NewOwner);
+	DeactivateEmbers();
+}
+
+void AWeapon::DeactivateEmbers()
+{
+	if (EmbersEffect)
+	{
+		EmbersEffect->Deactivate();
+	}
+}
+
+void AWeapon::DisableSphereCollision()
+{
+	if (Sphere)
+	{
+		Sphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+}
+
+void AWeapon::PlayEquipSound(AActor* NewOwner)
+{
 	if (EquipSound && NewOwner->ActorHasTag(FName("SlashCharacter")))
 	{
 		UGameplayStatics::PlaySoundAtLocation(
@@ -52,16 +70,6 @@ void AWeapon::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOw
 			GetActorLocation()
 		);
 	}
-	if (Sphere)
-	{
-		Sphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
-	if (EmbersEffect)
-	{
-		EmbersEffect->Deactivate();
-	}
-	FVector test4 = this->GetActorScale3D();
-	UE_LOG(LogTemp, Warning, TEXT("The float 4: %f"), test4.X);
 }
 
 void AWeapon::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
@@ -70,7 +78,6 @@ void AWeapon::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocke
 	// FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
 
 	FVector test2 = this->GetActorScale3D();
-	UE_LOG(LogTemp, Warning, TEXT("The float x is: %f"), test2.X);
 
 	ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
 
@@ -78,41 +85,23 @@ void AWeapon::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocke
 	UE_LOG(LogTemp, Warning, TEXT("The float y is: %f"), test3.X);
 }
 
-void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	Super::OnSphereOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-}
-
-void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
-}
-
 void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	const FVector Start = BoxTraceStart->GetComponentLocation();
-	const FVector End = BoxTraceEnd->GetComponentLocation();
-
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(this);
-	FHitResult BoxHit;
-	for (AActor* Actor : IgnoreActors)
+	if (ActorIsSameType(OtherActor))
 	{
-		ActorsToIgnore.AddUnique(Actor);
+		return;
 	}
 
-	UKismetSystemLibrary::BoxTraceSingle(this,
-		Start,
-		End,
-		FVector(5.f, 5.f, 5.f),
-		BoxTraceStart->GetComponentRotation(),
-		ETraceTypeQuery::TraceTypeQuery1,
-		false, ActorsToIgnore,
-		EDrawDebugTrace::None,
-		BoxHit,
-		true);
+	FHitResult BoxHit;
+	BoxTrace(BoxHit);
+
 	if (BoxHit.GetActor())
 	{
+		if (ActorIsSameType(BoxHit.GetActor()))
+		{
+			return;
+		}
+
 		UGameplayStatics::ApplyDamage(
 			BoxHit.GetActor(),
 			Handedness == EWeaponHanded::EWH_TwoHanded ? Damage * 2.f : Damage,
@@ -121,16 +110,48 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 			UDamageType::StaticClass() // we just use the standard class for damage in ue5
 		);
 
-		IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
-		if (HitInterface)
-		{
-			// The execute_ prefix is there because its a blueprint native event in hitinterface.h
-			HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
-		}
-		IgnoreActors.AddUnique(BoxHit.GetActor());
-
+		ExecuteGetHit(BoxHit);
 		CreateFields(BoxHit.ImpactPoint);
-
-		
 	};
+}
+
+bool AWeapon::ActorIsSameType(AActor* OtherActor)
+{
+	return GetOwner()->ActorHasTag(TEXT("Enemy")) && OtherActor->ActorHasTag(TEXT("Enemy"));
+}
+
+void AWeapon::ExecuteGetHit(FHitResult& BoxHit)
+{
+	IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
+	if (HitInterface)
+	{
+		// The execute_ prefix is there because its a blueprint native event in hitinterface.h
+		HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
+	}
+}
+
+void AWeapon::BoxTrace(FHitResult& BoxHit)
+{
+	const FVector Start = BoxTraceStart->GetComponentLocation();
+	const FVector End = BoxTraceEnd->GetComponentLocation();
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+	for (AActor* Actor : IgnoreActors)
+	{
+		ActorsToIgnore.AddUnique(Actor);
+	}
+
+	UKismetSystemLibrary::BoxTraceSingle(this,
+		Start,
+		End,
+		BoxTraceExtent,
+		BoxTraceStart->GetComponentRotation(),
+		ETraceTypeQuery::TraceTypeQuery1,
+		false,
+		ActorsToIgnore,
+		showBoxDebug ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None,
+		BoxHit,
+		true);
+	IgnoreActors.AddUnique(BoxHit.GetActor());
 }
