@@ -1,4 +1,5 @@
 health bar got messed up
+	ok i found bug and its because the hp was set to 10. temp fix but real fix is to ack this
 sounds for death / footsteps for enemy
 laying down while in map preview
-not consistent sounds when hitting player
+	because health was 10

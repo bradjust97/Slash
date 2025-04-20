@@ -68,6 +68,7 @@ void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 void ASlashCharacter::GetHit_Implementation(const FVector& ImpactPoint)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Get hit slash char"));
 	PlayHitSound(ImpactPoint);
 	SpawnHitParticles(ImpactPoint);
 }
@@ -84,6 +85,7 @@ void ASlashCharacter::BeginPlay()
 		}
 	}
 	Tags.Add(FName("EngageableTarget"));
+	Tags.Add(FName("Player"));
 }
 
 void ASlashCharacter::MoveForward(float Value)

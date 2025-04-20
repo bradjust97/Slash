@@ -79,6 +79,7 @@ void ABaseCharacter::DirectionalHitReact(const FVector& ImpactPoint)
 
 void ABaseCharacter::PlayHitSound(const FVector& ImpactPoint)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Playing hit sound for BC"));
 	if (HitSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, HitSound, ImpactPoint);

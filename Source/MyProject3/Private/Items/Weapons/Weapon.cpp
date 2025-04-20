@@ -62,7 +62,7 @@ void AWeapon::DisableSphereCollision()
 
 void AWeapon::PlayEquipSound(AActor* NewOwner)
 {
-	if (EquipSound && NewOwner->ActorHasTag(FName("SlashCharacter")))
+	if (EquipSound && NewOwner->ActorHasTag(FName("Player")))
 	{
 		UGameplayStatics::PlaySoundAtLocation(
 			this,
@@ -77,12 +77,7 @@ void AWeapon::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocke
 	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, true);
 	// FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
 
-	FVector test2 = this->GetActorScale3D();
-
 	ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
-
-	FVector test3 = this->GetActorScale3D();
-	UE_LOG(LogTemp, Warning, TEXT("The float y is: %f"), test3.X);
 }
 
 void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

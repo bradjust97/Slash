@@ -66,6 +66,7 @@ void AEnemy::Destroyed()
 
 void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Get hit imp called"));
 	ShowHealthBar();
 	if (IsAlive())
 	{
@@ -204,10 +205,16 @@ void AEnemy::HideHealthBar()
 
 void AEnemy::ShowHealthBar()
 {
+	UE_LOG(LogTemp, Warning, TEXT("SHB called"));
 	if (HealthBarWidget)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Setting to true"));
 		HealthBarWidget->SetVisibility(true);
 	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("HBar wasnt a valid ptr"));
+	}
+	UE_LOG(LogTemp, Warning, TEXT("----------------------"));
 }
 
 void AEnemy::LoseInterest()
