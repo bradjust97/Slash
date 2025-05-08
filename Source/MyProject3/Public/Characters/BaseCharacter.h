@@ -23,6 +23,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
 	// this is virtual bc enemy and slashchar have different things they do in attack like state
 	virtual void Attack();
 	virtual void Die();

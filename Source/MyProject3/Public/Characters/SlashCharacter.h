@@ -60,6 +60,9 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void FinishEquipping();
 
+	UFUNCTION(BlueprintCallable)
+	void HitReactEnd();
+
 	void SetStateToEquippedWeaponHandedness();
 
 	UPROPERTY(EditAnywhere, Category = Input)
