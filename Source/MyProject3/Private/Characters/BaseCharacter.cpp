@@ -23,11 +23,11 @@ void ABaseCharacter::BeginPlay()
 	
 }
 
-void ABaseCharacter::GetHit_Implementation(const FVector& ImpactPoint)
+void ABaseCharacter::GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter)
 {
-	if (IsAlive())
+	if (IsAlive() && Hitter)
 	{
-		DirectionalHitReact(ImpactPoint);
+		DirectionalHitReact(Hitter->GetActorLocation());
 	}
 	else
 	{
@@ -148,6 +148,15 @@ int32 ABaseCharacter::PlayAttackMontage()
 int32 ABaseCharacter::PlayDeathMontage()
 {
 	return PlayRandomMontageSection(DeathMontage, DeathMontageSections);
+}
+
+void ABaseCharacter::StopAttackMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Stop(0.25f, AttackMontage);
+	}
 }
 
 void ABaseCharacter::DisableCapsule()

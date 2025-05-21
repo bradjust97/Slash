@@ -23,7 +23,9 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+
+	/** Combat */
+	virtual void GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter) override;
 	// this is virtual bc enemy and slashchar have different things they do in attack like state
 	virtual void Attack();
 	virtual void Die();
@@ -34,9 +36,12 @@ protected:
 	void DisableCapsule();
 	virtual bool CanAttack();
 	bool IsAlive();
+
+	/** Montage */
 	void PlayHitReactMontage(const FName& SectionName);
 	virtual int32 PlayAttackMontage();
 	virtual int32 PlayDeathMontage();
+	void StopAttackMontage();
 
 	UFUNCTION(BlueprintCallable)
 	virtual void AttackEnd();

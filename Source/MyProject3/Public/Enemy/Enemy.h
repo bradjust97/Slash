@@ -26,7 +26,7 @@ public:
 
 	/** <IHitInterface> */
 	// _Implementation is added when we make it a blueprint native event in hitinterface.h
-	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+	virtual void GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter) override;
 	/** </IHitInterface> */
 
 protected:
@@ -50,6 +50,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
 
+	UPROPERTY(BlueprintReadOnly, Category = Combat)
+	AActor* CombatTarget;
 
 private:
 
@@ -90,11 +92,6 @@ private:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class AWeapon> WeaponClass;
 
-
-	// Ensures initialized to nullptr and is in system
-	UPROPERTY()
-	AActor* CombatTarget;
-
 	UPROPERTY(EditAnywhere)
 	double CombatRadius = 1000.f;
 
@@ -129,10 +126,10 @@ private:
 	FTimerHandle AttackTimer;
 
 	UPROPERTY(EditAnywhere, Category = "Combat")
-	float AttackMin = 0.5f;
+	float AttackMin = 0.2f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat")
-	float AttackMax = 1.f;
+	float AttackMax = 0.5f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	float ChasingSpeed = 300.f;

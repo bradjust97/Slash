@@ -25,7 +25,7 @@ public:
 	ASlashCharacter();
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// _Implementation is added when we make it a blueprint native event in hitinterface.h
-	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+	virtual void GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter) override;
 
 protected:
 	virtual void BeginPlay() override;
